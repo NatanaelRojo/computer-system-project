@@ -16,10 +16,13 @@ class RobotMazeEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(settings.NUM_ACTIONS)
         self.observation_space = gym.spaces.Discrete(settings.NUM_TILES)
         self.maze = KruskalMazeGenerator(settings.ROWS, settings.COLS)
-        #self.maze.generate()
+        # self.maze.generate()
         self.initial_state = self.maze.entrance_index
         self.finish_state = self.maze.exit_index
         self.total_tiles = self.maze.num_rows * self.maze.num_cols
+        self.keys_counter = 0
+        self.total_keys = 2
+        self.rewards = [44, 77]
         self.P = {current_state: {action: [] for action in range(
             settings.NUM_ACTIONS)} for current_state in range(self.total_tiles) if (self.__is_valid_state(current_state))}
         self.__build_P()
@@ -60,7 +63,9 @@ class RobotMazeEnv(gym.Env):
                 raise RuntimeError("Variable options is not a dictionary")
             self.delay = options.get('delay', 0.5)
 
-        self.current_state, self.current_action, self.current_reward = self.initial_state, 1, 0.0
+        self.current_state, self.current_action, self.current_reward, self.keys_counter = self.initial_state, 1, 0.0, 0
+        self.rewards = [44, 77]
+        self.maze.chests = [44, 77]
         self.render_character, self.render_goal = True, True
 
         for tile in self.tilemap.tiles:
@@ -69,8 +74,23 @@ class RobotMazeEnv(gym.Env):
         return self.current_state, {}
 
     def step(self, action):
-        _, next_state, reward, terminated = self.P[self.current_state][action][0]
+        probability, next_state, reward, terminated = self.P[self.current_state][action][0]
+        state_aux = self.current_state
         self.current_state, self.current_action = next_state, action
+
+        if (self.check_chest_exists(next_state)):
+            terminated = False
+            self.maze.chests.remove(next_state)
+            self.rewards.remove(next_state)
+            self.keys_counter += 1
+            new_transition = (self.P[state_aux][action][0][0], self.P[state_aux]
+                              [action][0][1], 0.0, terminated)
+            self.P[state_aux][action][0] = new_transition
+            # self.P[state_aux][action][0][2] = 0.0
+        if self.keys_counter == self.total_keys:
+            terminated = True
+            self.P[state_aux][action][0] = (
+                probability, next_state, 1.0, terminated)
 
         if (self.render_mode is not None):
             if terminated:
@@ -82,9 +102,11 @@ class RobotMazeEnv(gym.Env):
                     self.render_character = False
                     settings.SOUNDS["ice_cracking"].play()
                     settings.SOUNDS["water_splash"].play()
-
             self.render()
             time.sleep(self.delay)
+
+        # self.render()
+        # time.sleep(self.delay)
 
         return next_state, reward, terminated, False, {}
 
@@ -92,6 +114,11 @@ class RobotMazeEnv(gym.Env):
         self.render_surface.fill((0, 0, 0))
 
         self.tilemap.render(self.render_surface)
+
+        # self.render_surface.blit(
+        # settings.TEXTURES["reco"],
+        # (self.tilemap.tiles[9].x, self.tilemap.tiles[9].y)
+        # )
 
         self.render_surface.blit(
             settings.TEXTURES["stool"],
@@ -133,10 +160,10 @@ class RobotMazeEnv(gym.Env):
 
     def check_wall_exists(self, current_state, next_state):
         return (current_state, next_state) in self.maze.walls
-    
+
     def check_chest_exists(self, index):
         return index in self.maze.chests
-    
+
     def check_hole_exists(self, state):
         return state in self.maze.holes
 
@@ -162,14 +189,14 @@ class RobotMazeEnv(gym.Env):
                 col, row - 1) if (row > 0) else current_state
             next_state = current_state if (self.check_wall_exists(
                 current_state, next_state)) else next_state
-            if (self.check_chest_exists(next_state)):
-                reward = 1.0
+            # if (self.check_chest_exists(next_state)):
+            # reward = 1.0
         reward = 1.0 if (
             next_state == self.maze.exit_index and current_state != self.maze.exit_index) else 0.0
         next_state = next_state if (
             current_state != self.maze.exit_index) else current_state
-        terminated = True if (
-            next_state == self.maze.exit_index) else False
+        # terminated = True if (
+        # next_state == self.maze.exit_index) else False
         probability = 1
 
         # wall_exists = self.check_wall_exists(current_state, next_state)
@@ -186,13 +213,23 @@ class RobotMazeEnv(gym.Env):
             return
         elif (chest_exists):
             self.P[current_state][action] = [
-                (probability, next_state, 1.0, terminated)]
+                (probability, next_state, 1.0, False)]
+            # self.keys_counter += 1
             return
+            # if self.keys_counter == self.total_keys:
+            # self.P[current_state][action] = [
+            # (probability, next_state, 1.0, True)]
+            # return
+            # else:
+            # self.P[current_state][action] = [
+            # (probability, next_state, 1.0, False)]
+            # self.keys_counter += 1
+            # return
         else:
             self.P[current_state][action] = [
                 (probability, next_state, reward, terminated)]
             return
-    
+
     def __build_P(self):
         for row in range(self.maze.num_rows):
             for col in range(self.maze.num_cols):
@@ -209,6 +246,8 @@ class RobotMazeEnv(gym.Env):
             for state, reward, terminated in (possibility[0][1:] for possibility in possibilities.values()):
                 if terminated:
                     tile_texture_names[state] = "hole" if reward <= 0 else "ice"
+                elif (state in self.rewards):
+                    tile_texture_names[state] = "reco"
 
         tile_texture_names[self.finish_state] = "ice"
         self.tilemap = TileMap(
@@ -241,4 +280,10 @@ class RobotMazeEnv(gym.Env):
             if chestt[1]:
                 return True
         return False
-    
+
+
+env = RobotMazeEnv()
+# print(env.P[9])
+
+# for key in env.P.keys():
+# print(env.P[key])

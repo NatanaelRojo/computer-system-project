@@ -66,9 +66,10 @@ class World:
 
         self.tilemap.render(self.render_surface)
 
+
         self.render_surface.blit(
             settings.TEXTURES["stool"],
-            (self.tilemap.tiles[0].x, self.tilemap.tiles[0].y),
+            (self.tilemap.tiles[0].x, self.tilemap.tiles[0].y)
         )
 
         if self.render_goal:

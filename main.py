@@ -36,7 +36,7 @@ if __name__ == "__main__":
         env.observation_space.n, env.action_space.n, gamma=0.9, epsilon=0.9
     )
 
-    train(env, agent, episodes=100000)
+    train(env, agent, episodes=300000)
     env.init_render_mode("human")
     play(env, agent)
 

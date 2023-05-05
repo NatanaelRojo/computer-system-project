@@ -43,6 +43,7 @@ TEXTURES = {
         BASE_DIR / "assets" / "graphics" / "cracked_hole.png"
     ),
     "goal": pygame.image.load(BASE_DIR / "assets" / "graphics" / "goal.png"),
+    "reco": pygame.image.load(BASE_DIR / "assets" / "graphics" / "reco.png"),
     "stool": pygame.image.load(BASE_DIR / "assets" / "graphics" / "stool.png"),
     "character": [
         pygame.image.load(BASE_DIR / "assets" / "graphics" / "elf_left.png"),
