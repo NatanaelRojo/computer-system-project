@@ -11,8 +11,8 @@ if "SDL_AUDIODRIVER" in os.environ:
 TILE_SIZE = 32
 
 # Grid
-ROWS = 10
-COLS = 10
+ROWS = 6
+COLS = 6
 
 NUM_TILES = ROWS * COLS
 NUM_ACTIONS = 4

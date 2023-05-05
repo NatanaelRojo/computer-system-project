@@ -21,8 +21,9 @@ class RobotMazeEnv(gym.Env):
         self.finish_state = self.maze.exit_index
         self.total_tiles = self.maze.num_rows * self.maze.num_cols
         self.keys_counter = 0
-        self.total_keys = 2
-        self.rewards = [44, 77]
+        self.total_keys = 3
+        # self.rewards = [44, 77]
+        self.rewards = [11, 21, 31]
         self.P = {current_state: {action: [] for action in range(
             settings.NUM_ACTIONS)} for current_state in range(self.total_tiles) if (self.__is_valid_state(current_state))}
         self.__build_P()
@@ -64,8 +65,8 @@ class RobotMazeEnv(gym.Env):
             self.delay = options.get('delay', 0.5)
 
         self.current_state, self.current_action, self.current_reward, self.keys_counter = self.initial_state, 1, 0.0, 0
-        self.rewards = [44, 77]
-        self.maze.chests = [44, 77]
+        self.rewards = [11, 21, 31]
+        self.maze.chests = [11, 21, 31]
         self.render_character, self.render_goal = True, True
 
         for tile in self.tilemap.tiles:
@@ -79,22 +80,26 @@ class RobotMazeEnv(gym.Env):
         self.current_state, self.current_action = next_state, action
 
         if (self.check_chest_exists(next_state)):
+            # settings.SOUNDS["win"].play()
             terminated = False
             self.maze.chests.remove(next_state)
             self.rewards.remove(next_state)
+            self.__build_P()
             self.keys_counter += 1
-            new_transition = (self.P[state_aux][action][0][0], self.P[state_aux]
-                              [action][0][1], 0.0, terminated)
-            self.P[state_aux][action][0] = new_transition
+            # new_transition = (self.P[state_aux][action][0][0], self.P[state_aux]
+            # [action][0][1], 0.0, terminated)
+            # self.P[state_aux][action][0] = new_transition
             # self.P[state_aux][action][0][2] = 0.0
         if self.keys_counter == self.total_keys:
+            settings.SOUNDS["win"].play()
+            print('termino el episodio')
             terminated = True
             self.P[state_aux][action][0] = (
                 probability, next_state, 1.0, terminated)
 
         if (self.render_mode is not None):
             if terminated:
-                if next_state == self.finish_state:
+                if next_state == self.finish_state or self.keys_counter == self.total_keys:
                     self.render_goal = False
                     settings.SOUNDS["win"].play()
                 else:
@@ -191,10 +196,10 @@ class RobotMazeEnv(gym.Env):
                 current_state, next_state)) else next_state
             # if (self.check_chest_exists(next_state)):
             # reward = 1.0
-        reward = 1.0 if (
-            next_state == self.maze.exit_index and current_state != self.maze.exit_index) else 0.0
-        next_state = next_state if (
-            current_state != self.maze.exit_index) else current_state
+        # reward = 1.0 if (
+            # next_state == self.maze.exit_index and current_state != self.maze.exit_index) else 0.0
+        # next_state = next_state if (
+        # current_state != self.maze.exit_index) else current_state
         # terminated = True if (
         # next_state == self.maze.exit_index) else False
         probability = 1
@@ -227,7 +232,7 @@ class RobotMazeEnv(gym.Env):
             # return
         else:
             self.P[current_state][action] = [
-                (probability, next_state, reward, terminated)]
+                (probability, next_state, 0.0, False)]
             return
 
     def __build_P(self):
@@ -282,7 +287,7 @@ class RobotMazeEnv(gym.Env):
         return False
 
 
-env = RobotMazeEnv()
+# env = RobotMazeEnv()
 # print(env.P[9])
 
 # for key in env.P.keys():

@@ -19,22 +19,29 @@ class KruskalMazeGenerator(MazeGenerator):
         super().__init__(num_rows, num_cols, neighborhood)
         # self.entrance_index = self.compute_index(
         # *(random.randint(0, self.num_cols - 1), 0))
-        self.entrance_index = 1
-        self.exit_index = 98
+        self.entrance_index = 0
+        self.exit_index = 11
         # self.exit_index = self.compute_index(
         # *(random.randint(0, self.num_cols - 1), self.num_rows - 1))
         self.path = []
-        self.chests = [44, 77]
-        self.tri_force = 77
-        self.walls = set([(0, 10), (2, 12), (2, 3), (4, 5), (4, 14), (6, 16), (8, 18), (11, 12), (13, 14), (15, 16), (17, 18), (19, 29), (20, 21),
-                          (21, 31), (23, 33), (25, 35), (27, 37), (27, 28), (28, 29), (30,
-                                                                                       31), (32, 42), (34, 44), (34, 35), (36, 37), (42, 43),
-                          (44, 54), (46, 47), (47, 57), (59, 69), (61, 62), (64, 65), (65,
-                                                                                       75), (65, 66), (68, 69), (71, 81), (71, 72), (75, 85),
-                          (81, 82), (82, 92), (96, 97)])
+        self.chests = [11, 21, 31]
+        self.tri_force = 11
+        self.walls = set([(1, 7), (7, 8), (9, 10), (14, 15), (15, 21), (24, 30),
+                          (24, 25), (25, 26), (28, 34), (32, 33)])
         self.walls = self.__get_walls()
-        self.holes = [4, 24, 40, 48, 54,
-                      56, 60, 63, 78, 84, 86, 90, 92, 99]
+        self.holes = [3, 12, 20, 35]
+
+        # self.chests = [44, 77]
+        # self.tri_force = 77
+        # self.walls = set([(0, 10), (2, 12), (2, 3), (4, 5), (4, 14), (6, 16), (8, 18), (11, 12), (13, 14), (15, 16), (17, 18), (19, 29), (20, 21),
+        #                  (21, 31), (23, 33), (25, 35), (27, 37), (27, 28), (28, 29), (30,
+        #                                                                               31), (32, 42), (34, 44), (34, 35), (36, 37), (42, 43),
+        #                  (44, 54), (46, 47), (47, 57), (59, 69), (61, 62), (64, 65), (65,
+        #                                                                              75), (65, 66), (68, 69), (71, 81), (71, 72), (75, 85),
+        #                  (81, 82), (82, 92), (96, 97)])
+        # self.walls = self.__get_walls()
+        # self.holes = [4, 24, 40, 48, 54,
+        #              56, 60, 63, 78, 84, 86, 90, 92, 99]
 
     def _init_walls(self) -> None:
         for i in range(self.num_rows):
