@@ -16,14 +16,13 @@ class RobotMazeEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(settings.NUM_ACTIONS)
         self.observation_space = gym.spaces.Discrete(settings.NUM_TILES)
         self.maze = KruskalMazeGenerator(settings.ROWS, settings.COLS)
-        # self.maze.generate()
         self.initial_state = self.maze.entrance_index
         self.finish_state = self.maze.exit_index
         self.total_tiles = self.maze.num_rows * self.maze.num_cols
         self.keys_counter = 0
-        self.total_keys = 3
-        # self.rewards = [44, 77]
-        self.rewards = [11, 21, 31]
+        self.total_keys = len(settings.REWARD_POSITION)
+        self.rewards = self.maze.chests
+        self.trees = [25, 35, 78]
         self.P = {current_state: {action: [] for action in range(
             settings.NUM_ACTIONS)} for current_state in range(self.total_tiles) if (self.__is_valid_state(current_state))}
         self.__build_P()
@@ -65,8 +64,8 @@ class RobotMazeEnv(gym.Env):
             self.delay = options.get('delay', 0.5)
 
         self.current_state, self.current_action, self.current_reward, self.keys_counter = self.initial_state, 1, 0.0, 0
-        self.rewards = [11, 21, 31]
-        self.maze.chests = [11, 21, 31]
+        self.rewards = settings.REWARD_POSITION
+        self.maze.chests = [43, 77]
         self.render_character, self.render_goal = True, True
 
         for tile in self.tilemap.tiles:
@@ -80,24 +79,25 @@ class RobotMazeEnv(gym.Env):
         self.current_state, self.current_action = next_state, action
 
         if (self.check_chest_exists(next_state)):
-            # settings.SOUNDS["win"].play()
             terminated = False
             self.maze.chests.remove(next_state)
-            self.rewards.remove(next_state)
             self.__build_P()
             self.keys_counter += 1
-            # new_transition = (self.P[state_aux][action][0][0], self.P[state_aux]
-            # [action][0][1], 0.0, terminated)
-            # self.P[state_aux][action][0] = new_transition
-            # self.P[state_aux][action][0][2] = 0.0
         if self.keys_counter == self.total_keys:
-            settings.SOUNDS["win"].play()
-            print('termino el episodio')
             terminated = True
             self.P[state_aux][action][0] = (
                 probability, next_state, 1.0, terminated)
 
         if (self.render_mode is not None):
+            if next_state == 43 or next_state == 77:
+                settings.SOUNDS["ice_cracking"].play()
+                self.tilemap.tiles[next_state].texture_name = "ice"
+                self.render_surface.blit(
+                    settings.TEXTURES["ice"],
+                    (self.tilemap.tiles[next_state].x,
+                     self.tilemap.tiles[next_state].y),
+                )
+
             if terminated:
                 if next_state == self.finish_state or self.keys_counter == self.total_keys:
                     self.render_goal = False
@@ -110,9 +110,6 @@ class RobotMazeEnv(gym.Env):
             self.render()
             time.sleep(self.delay)
 
-        # self.render()
-        # time.sleep(self.delay)
-
         return next_state, reward, terminated, False, {}
 
     def render(self):
@@ -120,16 +117,39 @@ class RobotMazeEnv(gym.Env):
 
         self.tilemap.render(self.render_surface)
 
-        # self.render_surface.blit(
-        # settings.TEXTURES["reco"],
-        # (self.tilemap.tiles[9].x, self.tilemap.tiles[9].y)
-        # )
+        self.render_surface.blit(
+            settings.TEXTURES["wood"],
+            (self.tilemap.tiles[10].x,
+             self.tilemap.tiles[10].y),
+        )
+
+        self.render_surface.blit(
+            settings.TEXTURES["Arbol"],
+            (self.tilemap.tiles[26].x,
+             self.tilemap.tiles[26].y),
+        )
+
+        self.render_trees()
+
+        self.render_surface.blit(
+            settings.TEXTURES["pozo"],
+            (self.tilemap.tiles[31].x,
+             self.tilemap.tiles[31].y),
+        )
+
+        self.render_surface.blit(
+            settings.TEXTURES["forest"],
+            (self.tilemap.tiles[30].x,
+             self.tilemap.tiles[30].y),
+        )
 
         self.render_surface.blit(
             settings.TEXTURES["stool"],
             (self.tilemap.tiles[self.initial_state].x,
              self.tilemap.tiles[self.initial_state].y),
         )
+
+        self.render_goals()
 
         if self.render_goal:
             self.render_surface.blit(
@@ -194,24 +214,11 @@ class RobotMazeEnv(gym.Env):
                 col, row - 1) if (row > 0) else current_state
             next_state = current_state if (self.check_wall_exists(
                 current_state, next_state)) else next_state
-            # if (self.check_chest_exists(next_state)):
-            # reward = 1.0
-        # reward = 1.0 if (
-            # next_state == self.maze.exit_index and current_state != self.maze.exit_index) else 0.0
-        # next_state = next_state if (
-        # current_state != self.maze.exit_index) else current_state
-        # terminated = True if (
-        # next_state == self.maze.exit_index) else False
         probability = 1
 
-        # wall_exists = self.check_wall_exists(current_state, next_state)
         hole_exists = self.check_hole_exists(next_state)
         chest_exists = self.check_chest_exists(next_state)
 
-        # if (wall_exists):
-        # self.P[current_state][action] = [
-        # (probability, current_state, reward, terminated)]
-        # return
         if hole_exists:
             self.P[current_state][action] = [
                 (probability, next_state, 0.0, True)]
@@ -219,17 +226,7 @@ class RobotMazeEnv(gym.Env):
         elif (chest_exists):
             self.P[current_state][action] = [
                 (probability, next_state, 1.0, False)]
-            # self.keys_counter += 1
             return
-            # if self.keys_counter == self.total_keys:
-            # self.P[current_state][action] = [
-            # (probability, next_state, 1.0, True)]
-            # return
-            # else:
-            # self.P[current_state][action] = [
-            # (probability, next_state, 1.0, False)]
-            # self.keys_counter += 1
-            # return
         else:
             self.P[current_state][action] = [
                 (probability, next_state, 0.0, False)]
@@ -251,8 +248,8 @@ class RobotMazeEnv(gym.Env):
             for state, reward, terminated in (possibility[0][1:] for possibility in possibilities.values()):
                 if terminated:
                     tile_texture_names[state] = "hole" if reward <= 0 else "ice"
-                elif (state in self.rewards):
-                    tile_texture_names[state] = "reco"
+                # elif (state in self.rewards):
+                    # tile_texture_names[state] = "reco"
 
         tile_texture_names[self.finish_state] = "ice"
         self.tilemap = TileMap(
@@ -270,25 +267,36 @@ class RobotMazeEnv(gym.Env):
                 start_pos = (x, y + settings.TILE_SIZE)
                 end_pos = (x + settings.TILE_SIZE, y + settings.TILE_SIZE)
                 pygame.draw.line(self.render_surface, pygame.Color(
-                    0, 0, 0), start_pos, end_pos)
+                    34, 139, 34), start_pos, end_pos)
             if right_wall_exists:
                 start_pos = (x + settings.TILE_SIZE, y)
                 end_pos = (x + settings.TILE_SIZE, y + settings.TILE_SIZE)
                 pygame.draw.line(self.render_surface, pygame.Color(
-                    0, 0, 0), start_pos, end_pos)
+                    34, 139, 34), start_pos, end_pos)
 
     def __is_valid_state(self, state):
         return state not in self.maze.holes
 
     def __check_if_chest_is_open(self, index):
         for chest in self.maze.chests:
-            if chestt[1]:
+            if chest[1]:
                 return True
         return False
 
+    def render_goals(self):
+        for reward in self.maze.chests:
+            if (reward == self.finish_state):
+                continue
+            self.render_surface.blit(
+                settings.TEXTURES["diamon"],
+                (self.tilemap.tiles[reward].x,
+                 self.tilemap.tiles[reward].y),
+            )
 
-# env = RobotMazeEnv()
-# print(env.P[9])
-
-# for key in env.P.keys():
-# print(env.P[key])
+    def render_trees(self):
+        for tree in self.trees:
+            self.render_surface.blit(
+                settings.TEXTURES["Arbol"],
+                (self.tilemap.tiles[tree].x,
+                 self.tilemap.tiles[tree].y),
+            )
