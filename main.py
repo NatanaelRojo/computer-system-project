@@ -5,7 +5,7 @@ from non_deterministic_montecarlo import NonDeterministicMonteCarlo
 from agent_dq import DoubleQLearning
 
 
-gym.register("FrozenLake-v3", "battery_maze_env:RobotMazeEnv")
+gym.register("TreasureTrail-v1", "battery_maze_env:RobotMazeEnv")
 
 
 def train(env, agent, episodes):
@@ -31,12 +31,13 @@ def play(env, agent):
 
 
 if __name__ == "__main__":
-    env = gym.make("FrozenLake-v3")
+    env = gym.make("TreasureTrail-v1")
     agent = NonDeterministicMonteCarlo(
         env.observation_space.n, env.action_space.n, gamma=0.9, epsilon=0.9
     )
 
-    train(env, agent, episodes=2000)
+    train(env, agent, episodes=400000)
+    agent.render()
     env.init_render_mode("human")
     play(env, agent)
 

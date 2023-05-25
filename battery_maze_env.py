@@ -22,7 +22,9 @@ class RobotMazeEnv(gym.Env):
         self.keys_counter = 0
         self.total_keys = len(settings.REWARD_POSITION)
         self.rewards = self.maze.chests
-        self.trees = [25, 35, 78]
+        self.trees = [6, 14, 29, 35, 47,49, 69, 82, 85, 97]
+        self.tree_p = [30, 65]
+        self.wood = [40, 42, 54, 55, 56, 57]
         self.P = {current_state: {action: [] for action in range(
             settings.NUM_ACTIONS)} for current_state in range(self.total_tiles) if (self.__is_valid_state(current_state))}
         self.__build_P()
@@ -53,7 +55,7 @@ class RobotMazeEnv(gym.Env):
         self.screen = pygame.display.set_mode(
             (self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
         )
-        pygame.display.set_caption("Frozen Lake Environment")
+        pygame.display.set_caption("TreasureTrail-v1")
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -65,7 +67,7 @@ class RobotMazeEnv(gym.Env):
 
         self.current_state, self.current_action, self.current_reward, self.keys_counter = self.initial_state, 1, 0.0, 0
         self.rewards = settings.REWARD_POSITION
-        self.maze.chests = [43, 77]
+        self.maze.chests = [43, 75, 89]
         self.render_character, self.render_goal = True, True
 
         for tile in self.tilemap.tiles:
@@ -89,8 +91,8 @@ class RobotMazeEnv(gym.Env):
                 probability, next_state, 1.0, terminated)
 
         if (self.render_mode is not None):
-            if next_state == 43 or next_state == 77:
-                settings.SOUNDS["ice_cracking"].play()
+            if next_state == 43 or next_state == 75 or next_state == 89:
+                settings.SOUNDS["winner"].play()
                 self.tilemap.tiles[next_state].texture_name = "ice"
                 self.render_surface.blit(
                     settings.TEXTURES["ice"],
@@ -105,8 +107,7 @@ class RobotMazeEnv(gym.Env):
                 else:
                     self.tilemap.tiles[next_state].texture_name = "cracked_hole"
                     self.render_character = False
-                    settings.SOUNDS["ice_cracking"].play()
-                    settings.SOUNDS["water_splash"].play()
+                    settings.SOUNDS["winner"].play()
             self.render()
             time.sleep(self.delay)
 
@@ -117,31 +118,9 @@ class RobotMazeEnv(gym.Env):
 
         self.tilemap.render(self.render_surface)
 
-        self.render_surface.blit(
-            settings.TEXTURES["wood"],
-            (self.tilemap.tiles[10].x,
-             self.tilemap.tiles[10].y),
-        )
-
-        self.render_surface.blit(
-            settings.TEXTURES["Arbol"],
-            (self.tilemap.tiles[26].x,
-             self.tilemap.tiles[26].y),
-        )
-
         self.render_trees()
-
-        self.render_surface.blit(
-            settings.TEXTURES["pozo"],
-            (self.tilemap.tiles[31].x,
-             self.tilemap.tiles[31].y),
-        )
-
-        self.render_surface.blit(
-            settings.TEXTURES["forest"],
-            (self.tilemap.tiles[30].x,
-             self.tilemap.tiles[30].y),
-        )
+        self.render_wood()
+        self.render_tree_p()
 
         self.render_surface.blit(
             settings.TEXTURES["stool"],
@@ -167,7 +146,7 @@ class RobotMazeEnv(gym.Env):
                  self.tilemap.tiles[self.current_state].y),
             )
 
-        self.__render_walls()
+        #self.__render_walls()
 
         self.screen.blit(
             pygame.transform.scale(self.render_surface,
@@ -255,24 +234,6 @@ class RobotMazeEnv(gym.Env):
         self.tilemap = TileMap(
             self.maze.num_rows, self.maze.num_cols, tile_texture_names)
 
-    def __render_walls(self):
-        for tile in range(self.total_tiles):
-            col, row = self.maze.compute_coordinates(tile)
-            bottom_wall_exists = (
-                tile, tile + self.maze.num_cols) in self.maze.walls
-            right_wall_exists = (tile, tile + 1) in self.maze.walls
-            x, y = col * settings.TILE_SIZE, row * settings.TILE_SIZE
-
-            if bottom_wall_exists:
-                start_pos = (x, y + settings.TILE_SIZE)
-                end_pos = (x + settings.TILE_SIZE, y + settings.TILE_SIZE)
-                pygame.draw.line(self.render_surface, pygame.Color(
-                    34, 139, 34), start_pos, end_pos)
-            if right_wall_exists:
-                start_pos = (x + settings.TILE_SIZE, y)
-                end_pos = (x + settings.TILE_SIZE, y + settings.TILE_SIZE)
-                pygame.draw.line(self.render_surface, pygame.Color(
-                    34, 139, 34), start_pos, end_pos)
 
     def __is_valid_state(self, state):
         return state not in self.maze.holes
@@ -300,3 +261,39 @@ class RobotMazeEnv(gym.Env):
                 (self.tilemap.tiles[tree].x,
                  self.tilemap.tiles[tree].y),
             )
+
+    def render_wood(self):
+        for wood in self.wood:
+            self.render_surface.blit(
+                settings.TEXTURES["wood"],
+                (self.tilemap.tiles[wood].x,
+                 self.tilemap.tiles[wood].y),
+        )
+    
+    def render_tree_p(self):
+        for tree_p in self.tree_p:    
+            self.render_surface.blit(
+                settings.TEXTURES["forest"],
+                (self.tilemap.tiles[tree_p].x,
+                self.tilemap.tiles[tree_p].y),
+        )
+           
+    def __render_walls(self):
+        for tile in range(self.total_tiles):
+            col, row = self.maze.compute_coordinates(tile)
+            bottom_wall_exists = (
+                tile, tile + self.maze.num_cols) in self.maze.walls
+            right_wall_exists = (tile, tile + 1) in self.maze.walls
+            x, y = col * settings.TILE_SIZE, row * settings.TILE_SIZE
+
+            if bottom_wall_exists:
+                start_pos = (x, y + settings.TILE_SIZE)
+                end_pos = (x + settings.TILE_SIZE, y + settings.TILE_SIZE)
+                pygame.draw.line(self.render_surface, pygame.Color(
+                    34, 139, 34), start_pos, end_pos)
+            if right_wall_exists:
+                start_pos = (x + settings.TILE_SIZE, y)
+                end_pos = (x + settings.TILE_SIZE, y + settings.TILE_SIZE)
+                pygame.draw.line(self.render_surface, pygame.Color(
+                    34, 139, 34), start_pos, end_pos)
+            
